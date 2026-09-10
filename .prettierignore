@@ -1,0 +1,5 @@
+**/node_modules/
+**/build/
+**/.next/
+frontend/src/lib/schema.d.ts
+backend/openapi.json

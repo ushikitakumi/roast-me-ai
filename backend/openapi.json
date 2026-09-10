@@ -1,0 +1,965 @@
+{
+  "components": {
+    "schemas": {
+      "Availability": {
+        "properties": {
+          "available": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "available",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "Budget": {
+        "properties": {
+          "dailyCommittedMicroUsd": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "dailyLimitMicroUsd": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "monthlyCommittedMicroUsd": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "monthlyLimitMicroUsd": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "timezone": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "dailyCommittedMicroUsd",
+          "dailyLimitMicroUsd",
+          "monthlyCommittedMicroUsd",
+          "monthlyLimitMicroUsd",
+          "timezone"
+        ],
+        "type": "object"
+      },
+      "Goal": {
+        "properties": {
+          "abandonedAt": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "achievedAt": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "category": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "deadline": {
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "successCriteria": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "abandonedAt",
+          "achievedAt",
+          "category",
+          "createdAt",
+          "deadline",
+          "description",
+          "id",
+          "status",
+          "successCriteria",
+          "title"
+        ],
+        "type": "object"
+      },
+      "GoalInput": {
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "deadline": {
+            "format": "date",
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "requestVideo": {
+            "type": "boolean"
+          },
+          "successCriteria": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "GoalList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Goal"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "type": "object"
+      },
+      "GoalResult": {
+        "properties": {
+          "goal": {
+            "$ref": "#/components/schemas/Goal"
+          },
+          "roast": {
+            "$ref": "#/components/schemas/Roast"
+          },
+          "videoDecision": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "Me": {
+        "properties": {
+          "budget": {
+            "$ref": "#/components/schemas/Budget"
+          },
+          "paused": {
+            "type": "boolean"
+          },
+          "persona": {
+            "$ref": "#/components/schemas/Persona"
+          },
+          "roastIntensity": {
+            "type": "string"
+          },
+          "safety": {
+            "$ref": "#/components/schemas/Safety"
+          },
+          "settingsRevision": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "videoAvailability": {
+            "$ref": "#/components/schemas/Availability"
+          }
+        },
+        "required": [
+          "budget",
+          "paused",
+          "persona",
+          "roastIntensity",
+          "safety",
+          "settingsRevision",
+          "videoAvailability"
+        ],
+        "type": "object"
+      },
+      "Persona": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "voice": {
+            "$ref": "#/components/schemas/Voice"
+          }
+        },
+        "required": [
+          "description",
+          "id",
+          "name",
+          "voice"
+        ],
+        "type": "object"
+      },
+      "Progress": {
+        "properties": {
+          "body": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "goalId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "progressCategory": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "body",
+          "createdAt",
+          "goalId",
+          "id",
+          "progressCategory"
+        ],
+        "type": "object"
+      },
+      "ProgressInput": {
+        "properties": {
+          "body": {
+            "type": "string"
+          },
+          "progressCategory": {
+            "type": "string"
+          },
+          "requestVideo": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ProgressResult": {
+        "properties": {
+          "progressLog": {
+            "$ref": "#/components/schemas/Progress",
+            "type": "null"
+          },
+          "roast": {
+            "$ref": "#/components/schemas/Roast"
+          },
+          "videoDecision": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "Roast": {
+        "properties": {
+          "audioUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "intensity": {
+            "type": "string"
+          },
+          "personaId": {
+            "type": "string"
+          },
+          "pollAfterMs": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "text": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "videoUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "visibility": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "audioUrl",
+          "createdAt",
+          "id",
+          "intensity",
+          "personaId",
+          "pollAfterMs",
+          "status",
+          "text",
+          "videoUrl",
+          "visibility"
+        ],
+        "type": "object"
+      },
+      "Safety": {
+        "properties": {
+          "autoPaused": {
+            "type": "boolean"
+          },
+          "manualPaused": {
+            "type": "boolean"
+          },
+          "resumeAllowedAt": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "autoPaused",
+          "manualPaused",
+          "resumeAllowedAt"
+        ],
+        "type": "object"
+      },
+      "SettingsInput": {
+        "properties": {
+          "paused": {
+            "type": "boolean"
+          },
+          "roastIntensity": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "Timeline": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TimelineItem"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "type": "object"
+      },
+      "TimelineItem": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "data": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Goal"
+              },
+              {
+                "$ref": "#/components/schemas/Roast"
+              },
+              {
+                "$ref": "#/components/schemas/Progress"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "at",
+          "data",
+          "type"
+        ],
+        "type": "object"
+      },
+      "Voice": {
+        "properties": {
+          "creditText": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "creditText",
+          "id",
+          "name"
+        ],
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "OpenAPI definition",
+    "version": "v0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/goals": {
+      "get": {
+        "operationId": "goals",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoalList"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "core-controller"
+        ]
+      },
+      "post": {
+        "operationId": "create",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoalResult"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "202": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoalResult"
+                }
+              }
+            },
+            "description": "Accepted"
+          }
+        },
+        "tags": [
+          "core-controller"
+        ]
+      }
+    },
+    "/api/v1/goals/{id}": {
+      "get": {
+        "operationId": "goal",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Goal"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "core-controller"
+        ]
+      }
+    },
+    "/api/v1/goals/{id}/abandon": {
+      "post": {
+        "operationId": "abandon",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoalResult"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "core-controller"
+        ]
+      }
+    },
+    "/api/v1/goals/{id}/achieve": {
+      "post": {
+        "operationId": "achieve",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoalResult"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "core-controller"
+        ]
+      }
+    },
+    "/api/v1/goals/{id}/progress": {
+      "post": {
+        "operationId": "progress",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgressResult"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "202": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgressResult"
+                }
+              }
+            },
+            "description": "Accepted"
+          }
+        },
+        "tags": [
+          "core-controller"
+        ]
+      }
+    },
+    "/api/v1/goals/{id}/progress/{progress}": {
+      "delete": {
+        "operationId": "delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "progress",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "core-controller"
+        ]
+      }
+    },
+    "/api/v1/goals/{id}/timeline": {
+      "get": {
+        "operationId": "timeline",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Timeline"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "core-controller"
+        ]
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "operationId": "me",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "core-controller"
+        ]
+      }
+    },
+    "/api/v1/me/settings": {
+      "put": {
+        "operationId": "settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "core-controller"
+        ]
+      }
+    },
+    "/api/v1/personas": {
+      "get": {
+        "operationId": "personas",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "core-controller"
+        ]
+      }
+    },
+    "/api/v1/roasts/{id}": {
+      "get": {
+        "operationId": "roast",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Roast"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "core-controller"
+        ]
+      }
+    },
+    "/api/v1/roasts/{id}/media/{kind}": {
+      "get": {
+        "operationId": "media",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "core-controller"
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ]
+}

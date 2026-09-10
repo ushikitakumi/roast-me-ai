@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+**/.gradle/
+**/build/
+**/node_modules/
+**/.next/
+**/coverage/
+**/*.tsbuildinfo
+.DS_Store
+**/test-results/
+**/playwright-report/
+artifacts/
