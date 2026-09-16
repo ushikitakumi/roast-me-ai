@@ -398,6 +398,201 @@ class CoreIntegrationTest {
     ).isZero();
   }
 
+  enum RaceStage {
+    AUDIO,
+    SUBMIT,
+    DOWNLOAD,
+  }
+
+  enum Invalidation {
+    STOP,
+    LOWER_INTENSITY,
+    ACHIEVE,
+    ABANDON,
+    DELETE,
+    DELETE_SOURCE,
+  }
+
+  static java.util.stream.Stream<org.junit.jupiter.params.provider.Arguments> generationRaces() {
+    return Arrays.stream(RaceStage.values()).flatMap(stage ->
+      Arrays.stream(Invalidation.values()).map(action ->
+        org.junit.jupiter.params.provider.Arguments.of(stage, action)
+      )
+    );
+  }
+
+  @org.junit.jupiter.params.ParameterizedTest(name = "{0} / {1}")
+  @org.junit.jupiter.params.provider.MethodSource("generationRaces")
+  void invalidationDuringExternalWorkNeverRepublishesMedia(
+    RaceStage stage,
+    Invalidation action
+  ) throws Exception {
+    UUID g = goal();
+    var source = service.progress(
+      g,
+      "source",
+      new ProgressInput("先の報告", "PARTIAL", false)
+    );
+    UUID sourceId = (UUID) part(source, "progressLog").get("id");
+    var input = new ProgressInput("続きの報告", "PARTIAL", false);
+    var report = service.progress(g, "race", input);
+    UUID reportId = (UUID) part(report, "progressLog").get("id");
+    UUID id = (UUID) part(report, "roast").get("id");
+    db.update("INSERT INTO roast_context_sources VALUES (?,?)", id, sourceId);
+    var entered = new java.util.concurrent.CountDownLatch(1);
+    var release = new java.util.concurrent.CountDownLatch(1);
+    Runnable barrier = () -> {
+      entered.countDown();
+      try {
+        if (
+          !release.await(15, java.util.concurrent.TimeUnit.SECONDS)
+        ) throw new IllegalStateException("Test did not release provider");
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new IllegalStateException(e);
+      }
+    };
+    var video = new jp.roastme.domain.AvatarVideoGenerator() {
+      public String submit(UUID roast, byte[] audio) {
+        String external = provider.submit(roast, audio);
+        // Acceptance happened, but its acknowledgement is still in flight.
+        if (stage == RaceStage.SUBMIT) barrier.run();
+        return external;
+      }
+
+      public VideoStatus status(String external) {
+        return provider.status(external);
+      }
+
+      public byte[] download(String external) {
+        byte[] bytes = provider.download(external);
+        // Completed bytes have arrived; publication has not committed yet.
+        if (stage == RaceStage.DOWNLOAD) barrier.run();
+        return bytes;
+      }
+    };
+    var worker = new jp.roastme.media.MediaPipeline(
+      db,
+      transactions,
+      Clock.systemUTC(),
+      text -> {
+        byte[] bytes = provider.synthesize(text);
+        if (stage == RaceStage.AUDIO) barrier.run();
+        return bytes;
+      },
+      video,
+      storage,
+      budget,
+      true,
+      600
+    );
+    assertThat(worker.enqueue(id)).isEqualTo("ACCEPTED");
+    if (stage != RaceStage.AUDIO) worker.runOnce(id);
+    if (stage == RaceStage.DOWNLOAD) worker.runOnce(id);
+    var executor = java.util.concurrent.Executors.newFixedThreadPool(2);
+    try {
+      var running = executor.submit(() -> worker.runOnce(id));
+      assertThat(
+        entered.await(10, java.util.concurrent.TimeUnit.SECONDS)
+      ).isTrue();
+      // A separate transaction must commit while the provider is blocked.
+      executor
+        .submit(() -> {
+          switch (action) {
+            case STOP -> service.updateSettings(
+              new SettingsInput("NORMAL", true)
+            );
+            case LOWER_INTENSITY -> service.updateSettings(
+              new SettingsInput("MILD", false)
+            );
+            case ACHIEVE -> service.close(g, "finish", true);
+            case ABANDON -> service.close(g, "finish", false);
+            case DELETE -> service.deleteProgress(g, reportId);
+            case DELETE_SOURCE -> service.deleteProgress(g, sourceId);
+          }
+        })
+        .get(10, java.util.concurrent.TimeUnit.SECONDS);
+      assertHiddenEverywhere(g, id, input);
+      // Resume/restore before the old worker returns: invalidation must be permanent.
+      if (
+        action == Invalidation.STOP || action == Invalidation.LOWER_INTENSITY
+      ) service.updateSettings(new SettingsInput("NORMAL", false));
+      assertHiddenEverywhere(g, id, input);
+      release.countDown();
+      running.get(10, java.util.concurrent.TimeUnit.SECONDS);
+      worker.runOnce(id);
+      worker.runOnce(id);
+      assertHiddenEverywhere(g, id, input);
+      assertThat(
+        db.queryForObject(
+          "SELECT status FROM roast_jobs WHERE roast_id=?",
+          String.class,
+          id
+        )
+      ).isEqualTo(stage == RaceStage.AUDIO ? "CANCELLED" : "VIDEO_DONE");
+      assertThat(
+        db.queryForObject(
+          "SELECT count(*) FROM stub_video_submissions",
+          Integer.class
+        )
+      ).isEqualTo(stage == RaceStage.AUDIO ? 0 : 1);
+      assertThat(budget.snapshot().dailyCommittedMicroUsd()).isZero();
+      assertThat(
+        db.queryForObject(
+          "SELECT operation_id FROM generation_slot",
+          UUID.class
+        )
+      ).isNull();
+      if (action == Invalidation.DELETE_SOURCE) {
+        assertThat(
+          db.queryForObject(
+            "SELECT deleted_at IS NULL FROM progress_logs WHERE id=?",
+            Boolean.class,
+            reportId
+          )
+        ).isTrue();
+        assertThat(
+          service
+            .roast((UUID) part(source, "roast").get("id"))
+            .get("visibility")
+        ).isEqualTo("SUPPRESSED");
+      }
+    } finally {
+      release.countDown();
+      executor.shutdownNow();
+      assertThat(
+        executor.awaitTermination(10, java.util.concurrent.TimeUnit.SECONDS)
+      ).isTrue();
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private void assertHiddenEverywhere(
+    UUID goal,
+    UUID roast,
+    ProgressInput input
+  ) {
+    var view = service.roast(roast);
+    assertThat(view.get("visibility")).isEqualTo("SUPPRESSED");
+    for (String field : List.of("text", "audioUrl", "videoUrl", "pollAfterMs"))
+      assertThat(view.get(field)).as(field).isNull();
+    assertThat(part(service.progress(goal, "race", input), "roast")).isEqualTo(
+      view
+    );
+    var items = (List<Map<String, Object>>) service
+      .timeline(goal, 100, null)
+      .get("items");
+    assertThat(items).noneMatch(
+      item ->
+        item.get("type").equals("ROAST") &&
+        ((Map<String, Object>) item.get("data")).get("id").equals(roast)
+    );
+    for (String kind : List.of("audio", "video"))
+      assertThatThrownBy(() -> service.mediaKey(roast, kind)).isInstanceOf(
+        ApiException.class
+      );
+  }
+
   @Test
   void apiRequiresAuthenticationAndExposesGeneratedContract() throws Exception {
     mvc
