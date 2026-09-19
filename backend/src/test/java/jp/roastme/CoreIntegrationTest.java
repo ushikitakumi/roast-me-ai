@@ -593,6 +593,151 @@ class CoreIntegrationTest {
       );
   }
 
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+    strings = { "AUDIO_DONE", "VIDEO_SUBMITTED", "ACCEPTED_BEFORE_ACK" }
+  )
+  void killedApplicationProcessRecoversWithoutResubmission(String checkpoint)
+    throws Exception {
+    UUID id = pendingRoast();
+    assertThat(pipeline(provider).enqueue(id)).isEqualTo("ACCEPTED");
+    db.execute(
+      "CREATE TABLE IF NOT EXISTS process_test_reads(external_id text NOT NULL)"
+    );
+    db.execute("TRUNCATE process_test_reads");
+    var directory = java.nio.file.Files.createTempDirectory(
+      "roast-process-test-"
+    );
+    var ready = directory.resolve("ready");
+    var log = directory.resolve("worker.log");
+    Process first = startWorker(id, checkpoint, ready, log);
+    try {
+      long deadline =
+        System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(60);
+      while (
+          !java.nio.file.Files.exists(ready) &&
+          first.isAlive() &&
+          System.nanoTime() < deadline
+        )
+        Thread.sleep(50);
+      assertThat(java.nio.file.Files.exists(ready))
+        .withFailMessage(
+          "Worker failed to reach checkpoint: %s",
+          java.nio.file.Files.readString(log)
+        )
+        .isTrue();
+      assertThat(first.isAlive()).isTrue();
+      first.destroyForcibly();
+      assertThat(
+        first.waitFor(10, java.util.concurrent.TimeUnit.SECONDS)
+      ).isTrue();
+      assertThat(first.exitValue()).isNotZero();
+      String expected = checkpoint.equals("ACCEPTED_BEFORE_ACK")
+        ? "VIDEO_SUBMITTING"
+        : checkpoint;
+      assertThat(
+        db.queryForObject(
+          "SELECT status FROM roast_jobs WHERE roast_id=?",
+          String.class,
+          id
+        )
+      ).isEqualTo(expected);
+      if (checkpoint.equals("ACCEPTED_BEFORE_ACK")) {
+        assertThat(
+          db.queryForObject(
+            "SELECT external_job_id FROM roast_jobs WHERE roast_id=?",
+            String.class,
+            id
+          )
+        ).isNull();
+        // Advance only the lease expiry, avoiding a real 30-second wait.
+        db.update(
+          "UPDATE roast_jobs SET lease_expires_at=now()-interval '1 second' WHERE roast_id=?",
+          id
+        );
+      }
+      Process restarted = startWorker(id, "NONE", ready, log);
+      try {
+        assertThat(restarted.pid()).isNotEqualTo(first.pid());
+        assertThat(
+          restarted.waitFor(60, java.util.concurrent.TimeUnit.SECONDS)
+        ).isTrue();
+        assertThat(restarted.exitValue())
+          .withFailMessage(
+            "Restart failed: %s",
+            java.nio.file.Files.readString(log)
+          )
+          .isZero();
+      } finally {
+        restarted.destroyForcibly();
+        restarted.waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
+      }
+      boolean unknown = checkpoint.equals("ACCEPTED_BEFORE_ACK");
+      assertThat(service.roast(id).get("status")).isEqualTo(
+        unknown ? "SUBMISSION_UNKNOWN" : "VIDEO_DONE"
+      );
+      assertThat(
+        db.queryForObject(
+          "SELECT count(*) FROM stub_video_submissions WHERE roast_id=?",
+          Integer.class,
+          id
+        )
+      ).isEqualTo(1);
+      assertThat(
+        db.queryForObject(
+          "SELECT count(*) FROM process_test_reads",
+          Integer.class
+        )
+      ).isEqualTo(unknown ? 0 : 1);
+      assertThat(budget.snapshot().dailyCommittedMicroUsd()).isEqualTo(
+        unknown ? 200000 : 0
+      );
+      assertThat(
+        db.queryForObject(
+          "SELECT operation_id FROM generation_slot",
+          UUID.class
+        )
+      ).isNull();
+      if (unknown) assertThat(service.roast(id).get("videoUrl")).isNull();
+      else assertThat(storage.get(service.mediaKey(id, "video"))).isNotEmpty();
+    } finally {
+      first.destroyForcibly();
+      first.waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
+    }
+  }
+
+  private Process startWorker(
+    UUID id,
+    String checkpoint,
+    java.nio.file.Path ready,
+    java.nio.file.Path log
+  ) throws Exception {
+    var command = new ProcessBuilder(
+      java.nio.file.Path.of(
+        System.getProperty("java.home"),
+        "bin",
+        "java"
+      ).toString(),
+      "-cp",
+      System.getProperty("test.worker.classpath"),
+      ProcessWorker.class.getName()
+    );
+    var env = command.environment();
+    env.put("DATABASE_URL", postgres.getJdbcUrl());
+    env.put("DATABASE_USER", postgres.getUsername());
+    env.put("DATABASE_PASSWORD", postgres.getPassword());
+    env.put("BACKEND_USER", "test");
+    env.put("BACKEND_PASSWORD", "test-password-with-16-chars");
+    env.put("DAILY_LIMIT_MICRO_USD", "1000000");
+    env.put("TEST_ROAST_ID", id.toString());
+    env.put("TEST_CHECKPOINT", checkpoint);
+    env.put("TEST_READY_FILE", ready.toString());
+    return command
+      .redirectErrorStream(true)
+      .redirectOutput(log.toFile())
+      .start();
+  }
+
   @Test
   void apiRequiresAuthenticationAndExposesGeneratedContract() throws Exception {
     mvc

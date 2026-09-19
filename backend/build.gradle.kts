@@ -25,4 +25,7 @@ dependencies {
     testImplementation("org.testcontainers:testcontainers-junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
-tasks.test { useJUnitPlatform() }
+tasks.test {
+    useJUnitPlatform()
+    systemProperty("test.worker.classpath", sourceSets.test.get().runtimeClasspath.asPath)
+}
