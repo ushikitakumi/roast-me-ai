@@ -1,0 +1,74 @@
+{
+  "model_bytes": 36815920,
+  "model_format": "glTF 2.0 binary (not VRM)",
+  "meshes": 8,
+  "embedded_resources_only": true,
+  "morph_checks": [
+    {
+      "mesh": "base",
+      "target": "jawOpen",
+      "max_delta": 0.041656218469142914
+    },
+    {
+      "mesh": "base",
+      "target": "eyeBlinkLeft",
+      "max_delta": 0.015548467636108398
+    },
+    {
+      "mesh": "base",
+      "target": "eyeBlinkRight",
+      "max_delta": 0.015548467636108398
+    },
+    {
+      "mesh": "mind_eyebrows_02",
+      "target": "eyeBlinkLeft",
+      "max_delta": 0.002161860466003418
+    },
+    {
+      "mesh": "mind_eyebrows_02",
+      "target": "eyeBlinkRight",
+      "max_delta": 0.0021539926528930664
+    },
+    {
+      "mesh": "mind_eyelashes_02",
+      "target": "jawOpen",
+      "max_delta": 0.0009180307388305664
+    },
+    {
+      "mesh": "mind_eyelashes_02",
+      "target": "eyeBlinkLeft",
+      "max_delta": 0.016485214233398438
+    },
+    {
+      "mesh": "mind_eyelashes_02",
+      "target": "eyeBlinkRight",
+      "max_delta": 0.016734600067138672
+    },
+    {
+      "mesh": "teeth_base",
+      "target": "jawOpen",
+      "max_delta": 0.032517433166503906
+    },
+    {
+      "mesh": "tongue01",
+      "target": "jawOpen",
+      "max_delta": 0.031329184770584106
+    }
+  ],
+  "head_bones": [
+    "Head",
+    "Neck"
+  ],
+  "audio_seconds": 9.781333333333333,
+  "sample_rate": 24000,
+  "channels": 1,
+  "pcm_bits": 16,
+  "audio_peak": 12716,
+  "sha256": {
+    "rival-mpfb.glb": "63c645a2a863b9972e9a9c2ed576a1de4c390b8475508e1473e69c87a3ee299c",
+    "rival-ja.wav": "48b7ea30e278170e48a4d9ccf1a0ca428795700dd6001ddc990aeff0dbdaabbc",
+    "audio-query.json": "51db6e24addb058df21c11726055283f9134a915618ebc66e96d0263d529c8e5",
+    "line.ja.txt": "a278efd5b382dfdb2f746f7f1f09c43365421884f2a77c512513173cd79bbd4b"
+  },
+  "limitations": "Structural checks only; rendering, perceived age, expression and listening evaluation remain for A1/A2."
+}
